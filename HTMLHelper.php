@@ -69,12 +69,16 @@ abstract class ElementFull extends Element{
             }
             unset($this->children[$index]);
         }else{
-            error_log("Could not remove child at index $index from object $name");
+            error_log("Could not remove child at index $index from object {$this->name}");
         }
     }
 
     function &last(){
-        return $this->children[$this->last];
+        if($this->last == -1){
+            throw new Exception("In object {$this->name} Last is equal to -1.");
+        }else{
+            return $this->children[$this->last];
+        }
     }
     
     function __toString(){

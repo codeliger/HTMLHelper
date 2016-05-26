@@ -124,4 +124,105 @@ abstract class ElementEmpty extends Element{
     
 }
 
+/*
+    Alphabetical element listing
+*/
+
+class Anchor extends ElementEmpty{
+    
+    function __construct($href){
+        super("a");
+        setAttribute("href", $href);
+    }
+    
+}
+
+class LineBreak extends ElementEmpty{
+    
+    function __construct(){
+        super("br");
+    }
+    
+}
+
+class Span extends ElementFull{
+    
+    function __construct(){
+        super("span");
+    }
+    
+}
+
+// in future add multi-line support
+
+class Text{
+    
+    private $text;
+    
+    function __construct($text){
+        $this->text = $text;
+    }
+    
+    function __toString(){
+        return $text;
+    }
+    
+    function __sleep(){
+        return $text;
+    }
+    
+}
+
+class ListUnordered extends ElementFull{
+    function __construct(){
+        super("ul");
+    }
+}
+
+class ListOrdered extends ElementFull{
+    function __construct(){
+        super("ol");
+    }
+}
+
+class Document extends Element{
+    
+    private $head;
+    private $body;
+    
+    function __construct($title){
+        super("html");
+        $this->head = new Head();
+        $this->body = new Body();
+        $this->addChild=
+    }
+    
+    function &head(){
+        return $head;
+    }
+    
+    function &body(){
+        return $body;
+    }
+}
+
+class Head extends ElementFull{
+    
+    function __construct(){
+        super("head");
+    }
+    
+}
+
+class Body{
+    
+    function __construct(){
+        super("body");
+    }
+}
+
+
+
+
+
 

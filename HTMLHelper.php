@@ -1,7 +1,5 @@
 <?php
 
-// require cbor
-
 abstract class Element{
     
     private $name;
@@ -65,7 +63,10 @@ abstract class ElementFull extends Element{
             if($this->last === $this->children[$index]){
                 $this->last = -1;
                 array_splice($this->children, $index, 1);
-                $this->last = count($this->children);
+                // might be unecissary in the scope of top down form creation
+                if(count($this->children)){
+                    $this->last = count($this->children) - 1;   
+                }
             }
             unset($this->children[$index]);
         }else{

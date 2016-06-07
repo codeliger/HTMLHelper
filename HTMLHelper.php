@@ -2,12 +2,13 @@
 
 abstract class Element{
     
-    private $name;
-    private $attributes;
+    protected $name;
+    protected $attributes;
+    public $depth = 0;
     
     function __construct($name){
         $this->name = $name;
-        $this->$attributes = array();
+        $this->attributes = array();
     }
     
     function attributes(){
@@ -23,7 +24,7 @@ abstract class Element{
     
     function getAttribute($key){
         if($this->hasAttribute($key)){
-          return $this->$attributes[$key];
+          return $this->attributes[$key];
         }
         return false;
     }
@@ -32,58 +33,65 @@ abstract class Element{
         $this->attributes[$key] = $value;
     }
     
-    private function getAttributePairs(){
+    protected function getAttributePairs(){
         $attributesString = '';
         foreach($this->attributes as $key => $value){
             $attributesString .= "$key=\"$value\" ";
         }
-        return $attributeString;
+        return $attributesString;
     }
 
 }
 
-abstract class ElementFull extends Element{
+class ElementFull extends Element{
     
-    private $children = [];
-    private $last = -1;
-    
+    protected $children = [];
+    protected $last = -1;
+
     function __construct($name){
-        super($name);
+        parent::__construct($name);
     }
     
     function addChild($child){
         $this->children[] = $child;
-        $this->last = count($this->children - 1);
-        return $this->last;
+        $this->last = end($this->children);
+        $this->last->depth = $this->depth + 1;
     }
     
     function removeChild($index){
         if(isset($this->children[$index])){
-            // remove reference to last before unsetting child
-            if($this->last === $this->children[$index]){
-                $this->last = -1;
-                array_splice($this->children, $index, 1);
-                // might be unecissary in the scope of top down form creation
-                if(count($this->children)){
-                    $this->last = count($this->children) - 1;   
-                }
-            }
             unset($this->children[$index]);
+            $this->last = end($this->children);
         }else{
-            error_log("Could not remove child at index $index from object {$this->name}");
+            throw new Exception("There was no element at index $index");
         }
     }
 
     function &last(){
-        if($this->last == -1){
-            throw new Exception("In object {$this->name} Last is equal to -1.");
-        }else{
-            return $this->children[$this->last];
+        return $this->last;
+    }
+
+    function getChildren(){
+        $string = "";
+        foreach($this->children as $child){
+            $string .= $child;
         }
+        return $string;
     }
     
     function __toString(){
-        return sprintf("<%s %s></%s>",$this->name,$this->getAttributePairs(),$this->name);
+
+        // indented by 2 spaces
+        $s = str_repeat("\x20", $this->depth * 2);
+        $n = $this->name;
+        $a = $this->getAttributePairs();
+        $c = $this->getChildren();
+
+        if(count($this->children) === 1 && get_class(end($this->children)) == "Text"){
+            return "$s<$n$a>$c</$n>";
+        }else{
+            return "$s<$n$a>$s\n$c\r$s</$n>\r";
+        }
     }
     
     function __sleep(){
@@ -104,10 +112,10 @@ abstract class ElementFull extends Element{
     
 }
 
-abstract class ElementEmpty extends Element{
+class ElementEmpty extends Element{
     
     function __construct($name){
-        super($name);
+        parent::__construct($name);
     }
     
     function __toString(){
@@ -131,7 +139,7 @@ abstract class ElementEmpty extends Element{
 class Anchor extends ElementEmpty{
     
     function __construct($href){
-        super("a");
+        parent::__construct("a");
         setAttribute("href", $href);
     }
     
@@ -140,7 +148,7 @@ class Anchor extends ElementEmpty{
 class LineBreak extends ElementEmpty{
     
     function __construct(){
-        super("br");
+        parent::__construct("br");
     }
     
 }
@@ -148,7 +156,7 @@ class LineBreak extends ElementEmpty{
 class Span extends ElementFull{
     
     function __construct(){
-        super("span");
+        parent::__construct("span");
     }
     
 }
@@ -158,67 +166,94 @@ class Span extends ElementFull{
 class Text{
     
     private $text;
+    public $depth = 0;
     
     function __construct($text){
         $this->text = $text;
     }
     
     function __toString(){
-        return $text;
+        return $this->text;
     }
     
     function __sleep(){
-        return $text;
+        return $this->text;
     }
     
 }
 
+class Header extends ElementFull{
+
+    function __construct($level, $text)
+    {
+        assert($level >=1 && $level <= 6, "Invalid header level on line: " . __LINE__);
+        parent::__construct("h$level");
+        $this->addChild(new Text($text));
+    }
+}
+
 class ListUnordered extends ElementFull{
     function __construct(){
-        super("ul");
+        parent::__construct("ul");
     }
 }
 
 class ListOrdered extends ElementFull{
     function __construct(){
-        super("ol");
+        parent::__construct("ol");
     }
 }
 
-class Document extends Element{
+/*
+ * Explore options for referencing the head and body element for easier usage
+ */
+class Document extends ElementFull{
     
     private $head;
     private $body;
     
     function __construct($title){
-        super("html");
+        parent::__construct("html");
         $this->head = new Head();
         $this->body = new Body();
-        $this->addChild=
+
+        $this->addChild($this->head);
+        $this->addChild($this->body);
     }
     
     function &head(){
-        return $head;
+        return $this->head;
     }
     
     function &body(){
-        return $body;
+        return $this->body;
     }
 }
 
 class Head extends ElementFull{
     
     function __construct(){
-        super("head");
+        parent::__construct("head");
     }
     
 }
 
-class Body{
+class Body extends ElementFull{
     
     function __construct(){
-        super("body");
+        parent::__construct("body");
     }
+}
+
+class Meta extends ElementEmpty{
+
+    function __construct($name, $content)
+    {
+        parent::__construct("meta");
+        $this->setAttribute("name", $name);
+        $this->setAttribute("content", $content);
+    }
+
 }
 
 
